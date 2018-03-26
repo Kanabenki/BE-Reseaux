@@ -54,12 +54,36 @@ int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
 {
     struct mic_tcp_pdu pdu;
     struct mic_tcp_sock_addr;
+	int istimeout = 0 ;
 
     printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
-    /* do {
-        IP_recv(pdu, addr, TIMEOUT);
-    } while (!pdu.header.syn); */
-    return 0; //TODO CHANGE
+     do {
+        istimeout = IP_recv(pdu, addr, TIMEOUT);
+    } while ((!pdu.header.syn) && (istimeout != -1)); 
+	
+	if (istimeout != -1) {
+			printf("reçu un SYN\n");
+			struct mic_tcp_pdu pdu_syn_ack ; 
+			pdu_ack.header.ack = 1 ;
+			pdu_syn_ack_.header.syn = 1;
+			printf("Envoi SYN_ACK\n");
+			IP_send(pdu_ack,addr);	
+		}
+		do {
+			istimeout = IP_rev(pdu,addr,TIMEOUT);
+		} while ((!pdu.header.ack) && (istimeout != -1));
+	
+		if (istimeout!=-1)	
+			printf("reçu ACK\n"); 
+    		return 0;
+		} else {
+			return -1 ;
+		} 
+
+	} else {
+		return -1;
+	}
+
 }
 
 /*

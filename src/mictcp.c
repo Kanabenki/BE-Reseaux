@@ -127,10 +127,8 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
     do {
         IP_send(pdu, addr);
         printf("Sent packet seq n \n", pdu.header.seq_num);
-        do {
-            ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
-        } while (0); //ip_recv_res == -1); FIXME, bug in IP_RECV?
-    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num));
+        ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
+    } while (!(ip_recv_res >= 0 && recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num));
 
     expected_seq_num = (expected_seq_num+1)%2;
     printf("Received ack seq n %d\n", recv_pdu.header.seq_num);

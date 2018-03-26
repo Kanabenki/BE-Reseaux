@@ -105,9 +105,7 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
         printf("Sent packet seq n \n", pdu.header.seq_num);
         do {
             ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
-            printf("Received packet\n");
-        } while (strcmp(addr.ip_addr, recv_addr.ip_addr) != 0);
-        printf("Checked expeditor");
+        } while (0); //ip_recv_res == -1); FIXME, bug in IP_RECV?
     } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num));
 
     expected_seq_num = (expected_seq_num+1)%2;

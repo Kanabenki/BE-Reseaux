@@ -102,13 +102,16 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
 
     do {
         IP_send(pdu, addr);
+        printf("Sent packet\n");
         do {
             ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
-        } while (strcmp(addr.ip_addr, recv_addr.ip_addr) == 0);
-    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num && ip_recv_res >= 0));
+            printf("Received packet\n");
+        } while (strcmp(addr.ip_addr, recv_addr.ip_addr) != 0);
+        printf("Checked expeditor");
+    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num));
 
     expected_seq_num = (expected_seq_num+1)%2;
-       
+    printf("Received ack seq n %d\n", recv_pdu.header.seq_num);
     return 0;
 }
 
@@ -157,11 +160,14 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr){
 	
 	if ((pdu.header.ack == 0) && (pdu.header.syn ==0))
 	{
-        if (expected_seq_num == pdu.header.seq_num)
+        if (expected_seq_num == pdu.header.seq_num) {
 		    app_buffer_put(pdu.payload);
+            expected_seq_num = (expected_seq_num + 1) % 2;
+        }
 		struct mic_tcp_pdu pdu_ack ; 
 		pdu_ack.header.ack = 1 ;
 		pdu_ack.header.seq_num = pdu.header.seq_num;
+        printf("ACK for seq n %d\n", pdu.header.seq_num);
 		IP_send(pdu_ack,addr);	
 	}
 }

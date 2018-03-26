@@ -109,12 +109,12 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
 int mic_tcp_recv (int socket, char* mesg, int max_mesg_size)
 {
     struct mic_tcp_payload payload;
-
+	
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
     if (socket < 0 || socket >= curr_socket_nb) {
         return -1;
     }
-
+	 
     payload.data = mesg;
     payload.size = max_mesg_size;
     return app_buffer_get(payload);
@@ -139,8 +139,16 @@ int mic_tcp_close (int socket)
  * le buffer de réception du socket. Cette fonction utilise la fonction
  * app_buffer_put().
  */
-void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr)
-{
+void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr){
+
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
-    app_buffer_put(pdu.payload);
+	
+	if ((pdu.header.ack == 0) && (pdu.header.syn ==0))
+	{
+		app_buffer_put(pdu.payload);
+		struct mic_tcp_pdu pdu_ack ; 
+		pdu_ack.header.ack = 1 ;
+		pdu_ack.header.seq_num = pdu.header.seq_num;
+		IP_send(pdu_ack,addr);	
+	}
 }

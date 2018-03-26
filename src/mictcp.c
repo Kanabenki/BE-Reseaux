@@ -3,8 +3,8 @@
 #include <string.h>
 
 #define MAX_SOCKET 10
-#define TIMEOUT 10000
-#define LOSS_RATE 0
+#define TIMEOUT 10
+#define LOSS_RATE 15
 
 
 enum start_mode current_mode = SERVER;
@@ -102,7 +102,7 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
 
     do {
         IP_send(pdu, addr);
-        printf("Sent packet\n");
+        printf("Sent packet seq n \n", pdu.header.seq_num);
         do {
             ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
             printf("Received packet\n");

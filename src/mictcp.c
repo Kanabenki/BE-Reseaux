@@ -10,7 +10,7 @@
 enum start_mode current_mode = SERVER;
 static struct mic_tcp_sock internal_sock[MAX_SOCKET];
 static int curr_socket_nb = 0;
-static int last_seq_num = 0;
+static int expected_seq_num = 0;
 
 /*
  * Permet de créer un socket entre l’application et MIC-TCP
@@ -95,8 +95,7 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
     pdu.header.source_port = 10000;
     pdu.header.dest_port = 10000; //TODO change
 
-    pdu.header.seq_num = (last_seq_num+1) % 2;
-    last_seq_num = pdu.header.seq_num;
+    pdu.header.seq_num = expected_seq_num;
 
     pdu.payload.data = mesg;
     pdu.payload.size = mesg_size;
@@ -106,7 +105,9 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
         do {
             ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
         } while (strcmp(addr.ip_addr, recv_addr.ip_addr) == 0);
-    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == last_seq_num && ip_recv_res >= 0));
+    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num && ip_recv_res >= 0));
+
+    expected_seq_num = (expected_seq_num+1)%2;
        
     return 0;
 }
@@ -156,7 +157,8 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr){
 	
 	if ((pdu.header.ack == 0) && (pdu.header.syn ==0))
 	{
-		app_buffer_put(pdu.payload);
+        if (expected_seq_num == pdu.header.seq_num)
+		    app_buffer_put(pdu.payload);
 		struct mic_tcp_pdu pdu_ack ; 
 		pdu_ack.header.ack = 1 ;
 		pdu_ack.header.seq_num = pdu.header.seq_num;

@@ -54,10 +54,10 @@ int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
 {
     struct mic_tcp_pdu pdu;
     struct mic_tcp_sock_addr;
-	int istimeout = 0 ;
+//	int istimeout = 0 ;
 
     printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
-     do {
+/*     do {
         istimeout = IP_recv(pdu, addr, TIMEOUT);
     } while ((!pdu.header.syn) && (istimeout != -1)); 
 	
@@ -82,7 +82,7 @@ int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
 
 	} else {
 		return -1;
-	}
+	}                           FIXME ébauche du Stop and wait */
 
 }
 

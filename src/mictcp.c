@@ -78,6 +78,7 @@ int mic_tcp_connect(int socket, mic_tcp_sock_addr addr)
  */
 int mic_tcp_send (int socket, char* mesg, int mesg_size)
 {
+    int ip_recv_res;
     struct mic_tcp_pdu pdu, recv_pdu;
     struct mic_tcp_sock_addr addr, recv_addr;
     addr.ip_addr = "localhost";
@@ -103,11 +104,9 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
     do {
         IP_send(pdu, addr);
         do {
-            if (IP_recv(&recv_pdu, &recv_addr, TIMEOUT) == -1) {
-                continue;
-            }
+            ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
         } while (strcmp(addr.ip_addr, recv_addr.ip_addr) == 0);
-    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == last_seq_num));
+    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == last_seq_num && ip_recv_res >= 0));
        
     return 0;
 }

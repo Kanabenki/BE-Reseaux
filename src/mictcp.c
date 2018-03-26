@@ -10,6 +10,7 @@
 enum start_mode current_mode = SERVER;
 static struct mic_tcp_sock internal_sock[MAX_SOCKET];
 static int curr_socket_nb = 0;
+static int last_seq_num = 0;
 
 /*
  * Permet de créer un socket entre l’application et MIC-TCP
@@ -77,8 +78,9 @@ int mic_tcp_connect(int socket, mic_tcp_sock_addr addr)
  */
 int mic_tcp_send (int socket, char* mesg, int mesg_size)
 {
-    struct mic_tcp_pdu pdu;
-    struct mic_tcp_sock_addr addr;
+    int ip_recv_res;
+    struct mic_tcp_pdu pdu, recv_pdu;
+    struct mic_tcp_sock_addr addr, recv_addr;
     addr.ip_addr = "localhost";
     addr.ip_addr_size = strlen("localhost");
     addr.port = 10000;
@@ -92,11 +94,20 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
     memset(&pdu, 0, sizeof(pdu));
     pdu.header.source_port = 10000;
     pdu.header.dest_port = 10000; //TODO change
-    //TODO header complet
+
+    pdu.header.seq_num = (last_seq_num+1) % 2;
+    last_seq_num = pdu.header.seq_num;
+
     pdu.payload.data = mesg;
     pdu.payload.size = mesg_size;
 
-    IP_send(pdu, addr);    
+    do {
+        IP_send(pdu, addr);
+        do {
+            ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
+        } while (strcmp(addr.ip_addr, recv_addr.ip_addr) == 0);
+    } while (!(recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == last_seq_num && ip_recv_res >= 0));
+       
     return 0;
 }
 

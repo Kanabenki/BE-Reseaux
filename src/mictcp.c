@@ -112,7 +112,7 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
 
     if (socket < 0 || socket >= curr_socket_nb) {
-        return -1;
+    r    return -1;
     }
 
     memset(&pdu, 0, sizeof(pdu));
@@ -123,18 +123,30 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
 
     pdu.payload.data = mesg;
     pdu.payload.size = mesg_size;
+	
 
     do {
-        IP_send(pdu, addr);
+        
+		IP_send(pdu, addr);
         printf("Sent packet seq n \n", pdu.header.seq_num);
         ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
     } while (!(ip_recv_res >= 0 && recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num));
 
+	
     expected_seq_num = (expected_seq_num+1)%2;
     printf("Received ack seq n %d\n", recv_pdu.header.seq_num);
     return 0;
 }
 
+
+int current_loss_rate(int socket){
+int lost = 0 ;
+	for(int i =0; i<LOSS_ARR_SIZE;i++){
+		lost+=loss_status[socket][i];
+	}
+	lost = ((float) lost/ (float) LOSS_ARR_SIZE)*100;	 // returns valeur en pourcentage 0 < lost <100
+	return lost ;
+}
 /*
  * Permet à l’application réceptrice de réclamer la récupération d’une donnée
  * stockée dans les buffers de réception du socket

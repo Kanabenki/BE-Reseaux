@@ -74,7 +74,7 @@ int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
     printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
     do {
         istimeout = IP_recv(&pdu,addr, TIMEOUT);
-    } while ((!pdu.header.syn) && (istimeout != -1)); 
+    } while ((!pdu.header.syn) || (istimeout < 0)); 
 
 		printf(__FUNCTION__); printf(" reçu un SYN\n");
 		struct mic_tcp_pdu pdu_syn_ack ; 

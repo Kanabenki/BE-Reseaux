@@ -212,6 +212,10 @@ int mic_tcp_recv (int socket, char* mesg, int max_mesg_size)
 int mic_tcp_close (int socket)
 {
     printf("[MIC-TCP] Appel de la fonction :  "); printf(__FUNCTION__); printf("\n");
+    mic_tcp_pdu pdu = {0};
+    pdu.header.fin = 1;
+    IP_send(pdu, internal_sock[socket].addr);
+    internal_sock[socket].state = CLOSED;
     return 0;
 }
 

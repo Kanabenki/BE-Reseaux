@@ -8,7 +8,7 @@
 #define LOSS_RATE 0
 #define MAX_LOSS_RATE 0
 
-
+int loss_rate ;
 enum start_mode current_mode = SERVER;
 static struct mic_tcp_sock internal_sock[MAX_SOCKET];
 static int curr_socket_nb = 0;
@@ -49,8 +49,8 @@ int mic_tcp_socket(start_mode sm)
 
 
 /* Permet d’attribuer une adresse à un socket.
-* Retourne 0 si succès, et -1 en cas d’échec
-    */
+ * Retourne 0 si succès, et -1 en cas d’échec
+ */
 int mic_tcp_bind(int socket, mic_tcp_sock_addr addr)
 {
     printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
@@ -67,14 +67,14 @@ int mic_tcp_bind(int socket, mic_tcp_sock_addr addr)
  */
 int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
 {
-    int istimeout = 0 ;
-
     internal_sock[socket].state = IDLE;
 
     printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
     printf("SOCKET N %d\n", socket);
+
     
     printf(__FUNCTION__); printf(" attente du SYN\n");
+
     while(!(internal_sock[socket].state == SYN_RECEIVED)){
         sleep(1);
     }
@@ -85,8 +85,8 @@ int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
     pdu_syn_ack.header.syn = 1;
     printf(__FUNCTION__); printf(" envoi SYN_ACK\n");
     IP_send(pdu_syn_ack,*addr);	
-    
-   
+
+
     printf(__FUNCTION__);printf(" attente du ACK\n");
     while (!(internal_sock[socket].state == ESTABLISHED)){
         sleep(1);
@@ -108,6 +108,8 @@ int mic_tcp_connect(int socket, mic_tcp_sock_addr addr)
     struct mic_tcp_pdu recv_pdu = {0};
     struct mic_tcp_sock_addr recv_addr;
     pdu.header.syn = 1;
+    pdu.header.loss_rate = 15 ;    
+
     int ip_recv_res;
     do {
         IP_send(pdu, addr);
@@ -121,7 +123,7 @@ int mic_tcp_connect(int socket, mic_tcp_sock_addr addr)
     pdu.header.syn = 0;
     pdu.header.ack = 1;
     IP_send(pdu, addr);
-
+    printf(__FUNCTION__); printf(" SYN envoyé\n");
     return 0;
 }
 
@@ -229,8 +231,13 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr) {
 
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
 
-    if(pdu.header.ack == 0 && pdu.header.syn == 1){
-        internal_sock[0].state = SYN_RECEIVED;
+    if((pdu.header.ack ==0)&&(pdu.header.syn==1)){
+        int proposed_loss_rate = (int) pdu.header.loss_rate;
+        if (proposed_loss_rate  < MAX_LOSS_RATE){
+            internal_sock[0].state = SYN_RECEIVED ;
+            loss_rate = proposed_loss_rate;
+        } 
+
     }
 
     if(pdu.header.ack == 1 && pdu.header.syn == 0 && internal_sock[0].state == SYN_RECEIVED){

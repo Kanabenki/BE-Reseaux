@@ -5,8 +5,8 @@
 #define MAX_SOCKET 10
 #define TIMEOUT 1000
 #define LOSS_ARR_SIZE 100
-#define LOSS_RATE 50
-#define MAX_LOSS_RATE 30
+#define LOSS_RATE 0
+#define MAX_LOSS_RATE 0
 
 
 enum start_mode current_mode = SERVER;
@@ -67,15 +67,12 @@ int mic_tcp_bind(int socket, mic_tcp_sock_addr addr)
  */
 int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
 {
-
-
-    struct mic_tcp_pdu pdu;
-    struct mic_tcp_sock_addr;
     int istimeout = 0 ;
 
     internal_sock[socket].state = IDLE;
 
     printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
+    printf("SOCKET N %d\n", socket);
     /*  do {
         istimeout = IP_recv(&pdu,addr, TIMEOUT);
         } while ((!pdu.header.syn) || (istimeout < 0));*/ 
@@ -86,7 +83,7 @@ int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
     }
 
     printf(__FUNCTION__); printf(" reçu un SYN\n");
-    struct mic_tcp_pdu pdu_syn_ack ; 
+    struct mic_tcp_pdu pdu_syn_ack = {0}; 
     pdu_syn_ack.header.ack = 1 ;
     pdu_syn_ack.header.syn = 1;
     printf(__FUNCTION__); printf(" envoi SYN_ACK\n");
@@ -143,8 +140,9 @@ int mic_tcp_connect(int socket, mic_tcp_sock_addr addr)
 int mic_tcp_send (int socket, char* mesg, int mesg_size)
 {
     int ip_recv_res;
-    struct mic_tcp_pdu pdu, recv_pdu;
-    struct mic_tcp_sock_addr addr, recv_addr;
+    struct mic_tcp_pdu pdu, recv_pdu = {0};
+    struct mic_tcp_sock_addr addr = {0};
+    struct mic_tcp_sock_addr recv_addr = {0};
     addr.ip_addr = "localhost";
     addr.ip_addr_size = strlen("localhost");
     addr.port = 10000;
@@ -252,7 +250,7 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr){
         internal_sock[0].state = SYN_RECEIVED ;
     }
 
-    if((pdu.header.ack == 1)&&(pdu.header.syn==1)&&internal_sock[0].state==SYN_RECEIVED){
+    if((pdu.header.ack == 1)&&(pdu.header.syn==0)&&internal_sock[0].state==SYN_RECEIVED){
         internal_sock[0].state = ESTABLISHED ;
     }  
 
@@ -264,7 +262,7 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr){
             app_buffer_put(pdu.payload);
             expected_seq_num++;
         }
-        struct mic_tcp_pdu pdu_ack;
+        struct mic_tcp_pdu pdu_ack = {0};
         pdu_ack.header.ack = 1;
         pdu_ack.header.seq_num = pdu.header.seq_num;
         printf("[MIC-TCP-RECEV] RECEV N %d\n", pdu.header.seq_num);

@@ -18,12 +18,12 @@ static int total_pack_sent = 0;
 static int loss_status[MAX_SOCKET][LOSS_ARR_SIZE];
 
 int current_loss_rate(int socket){
-int lost = 0 ;
-	for(int i =0; i<LOSS_ARR_SIZE;i++){
-		lost+=loss_status[socket][i];
-	}
-	lost = ((float) lost/ (float) LOSS_ARR_SIZE)*100;	 // returns valeur en pourcentage 0 < lost <100
-	return lost ;
+    int lost = 0 ;
+    for(int i =0; i<LOSS_ARR_SIZE;i++){
+        lost+=loss_status[socket][i];
+    }
+    lost = ((float) lost/ (float) LOSS_ARR_SIZE)*100;	 // returns valeur en pourcentage 0 < lost <100
+    return lost ;
 }
 
 /*
@@ -32,10 +32,10 @@ int lost = 0 ;
  */
 int mic_tcp_socket(start_mode sm)
 {
-   printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
-   if (initialize_components(sm) == -1) {
-       return -1;
-   } /* Appel obligatoire */
+    printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
+    if (initialize_components(sm) == -1) {
+        return -1;
+    } /* Appel obligatoire */
     set_loss_rate(LOSS_RATE);
     current_mode = sm;
     if (curr_socket_nb >= MAX_SOCKET) {
@@ -47,18 +47,18 @@ int mic_tcp_socket(start_mode sm)
     return curr_socket_nb-1;
 }
 
-/*
- * Permet d’attribuer une adresse à un socket.
- * Retourne 0 si succès, et -1 en cas d’échec
- */
+
+/* Permet d’attribuer une adresse à un socket.
+* Retourne 0 si succès, et -1 en cas d’échec
+    */
 int mic_tcp_bind(int socket, mic_tcp_sock_addr addr)
 {
-   printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
-   if (socket < 0 || socket >= curr_socket_nb) {
-       return -1;
-   }
-   internal_sock[socket].addr = addr;
-   return 0;
+    printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
+    if (socket < 0 || socket >= curr_socket_nb) {
+        return -1;
+    }
+    internal_sock[socket].addr = addr;
+    return 0;
 }
 
 /*
@@ -67,27 +67,42 @@ int mic_tcp_bind(int socket, mic_tcp_sock_addr addr)
  */
 int mic_tcp_accept(int socket, mic_tcp_sock_addr* addr)
 {
+
+
     struct mic_tcp_pdu pdu;
     struct mic_tcp_sock_addr;
-	int istimeout = 0 ;
-	
+    int istimeout = 0 ;
+
+    internal_sock[socket].state = IDLE;
+
     printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
-    do {
+    /*  do {
         istimeout = IP_recv(&pdu,addr, TIMEOUT);
-    } while ((!pdu.header.syn) || (istimeout < 0)); 
+        } while ((!pdu.header.syn) || (istimeout < 0));*/ 
+    
+    printf(__FUNCTION__);printf(" attente du SYN\n");
+    while(!(internal_sock[socket].state == SYN_RECEIVED)){
+        sleep(1);
+    }
 
-		printf(__FUNCTION__); printf(" reçu un SYN\n");
-		struct mic_tcp_pdu pdu_syn_ack ; 
-		pdu_syn_ack.header.ack = 1 ;
-		pdu_syn_ack.header.syn = 1;
-		printf(__FUNCTION__); printf(" envoi SYN_ACK\n");
-		IP_send(pdu_syn_ack,*addr);	
+    printf(__FUNCTION__); printf(" reçu un SYN\n");
+    struct mic_tcp_pdu pdu_syn_ack ; 
+    pdu_syn_ack.header.ack = 1 ;
+    pdu_syn_ack.header.syn = 1;
+    printf(__FUNCTION__); printf(" envoi SYN_ACK\n");
+    IP_send(pdu_syn_ack,*addr);	
+    
+   
+    printf(__FUNCTION__);printf(" attente du ACK\n");
+    while (!(internal_sock[socket].state == ESTABLISHED)){
+        sleep(1);
+    }
 
-
-		do {
-			istimeout = IP_recv(&pdu,addr,TIMEOUT);
-		} while ((!pdu.header.ack) && (istimeout != -1));	
-		printf(__FUNCTION__) ;printf("reçu ACK\n"); 
+    /*   do {
+         istimeout = IP_recv(&pdu,addr,TIMEOUT);
+         } while ((!pdu.header.ack) && (istimeout != -1));	
+     */
+    printf(__FUNCTION__) ;printf("reçu ACK, connection établie\n"); 
 
     return 0;
 }
@@ -148,20 +163,20 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
 
     pdu.payload.data = mesg;
     pdu.payload.size = mesg_size;
-	
 
-/*     do {
-        IP_send(pdu, addr);
-        tries++;
-        printf("Sent packet seq n \n", pdu.header.seq_num);
-        ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
-        if (!(ip_recv_res >= 0 && recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num)
-            && tries > 1 && current_loss_rate(socket) < MAX_LOSS_RATE) {
-            loss_status[socket][expected_seq_num % LOSS_ARR_SIZE] = 1;
-            break;
-        }
-    } while (!(ip_recv_res >= 0 && recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num));
- */
+
+    /*     do {
+           IP_send(pdu, addr);
+           tries++;
+           printf("Sent packet seq n \n", pdu.header.seq_num);
+           ip_recv_res = IP_recv(&recv_pdu, &recv_addr, TIMEOUT);
+           if (!(ip_recv_res >= 0 && recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num)
+           && tries > 1 && current_loss_rate(socket) < MAX_LOSS_RATE) {
+           loss_status[socket][expected_seq_num % LOSS_ARR_SIZE] = 1;
+           break;
+           }
+           } while (!(ip_recv_res >= 0 && recv_pdu.header.ack == 1 && recv_pdu.header.seq_num == expected_seq_num));
+     */
     int is_lost = 0;
     printf("[MIC-TCP-SEND] LOSS RATE BEF SEND: %d\n", current_loss_rate(socket));
     IP_send(pdu, addr);
@@ -180,13 +195,13 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
     }
     loss_status[socket][total_pack_sent % LOSS_ARR_SIZE] = is_lost;
     printf("[MIC-TCP-SEND] LOSS RATE AFT SEND: %d\n", current_loss_rate(socket));
-    
+
     total_pack_sent++;
     if (!is_lost) {
         expected_seq_num++;
         printf("[MIC-TCP-SEND] RECEV ACK N %d\n", recv_pdu.header.seq_num);
     }
-    
+
     return 0;
 }
 
@@ -199,20 +214,20 @@ int mic_tcp_send (int socket, char* mesg, int mesg_size)
 int mic_tcp_recv (int socket, char* mesg, int max_mesg_size)
 {
     struct mic_tcp_payload payload;
-	
+
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
     if (socket < 0 || socket >= curr_socket_nb) {
         return -1;
     }
-	 
+
     payload.data = mesg;
     payload.size = max_mesg_size;
     return app_buffer_get(payload);
 }
 
 /*
-    IP_recv(&pdu, &addr, TIMEOUT);
-    IP_recv(&pdu, &addr, TIMEOUT);
+   IP_recv(&pdu, &addr, TIMEOUT);
+   IP_recv(&pdu, &addr, TIMEOUT);
  * Permet de réclamer la destruction d’un socket.
  * Engendre la fermeture de la connexion suivant le modèle de TCP.
  * Retourne 0 si tout se passe bien et -1 en cas d'erreur
@@ -232,18 +247,27 @@ int mic_tcp_close (int socket)
 void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr){
 
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
+
+    if((pdu.header.ack ==0)&&(pdu.header.syn==1)){
+        internal_sock[0].state = SYN_RECEIVED ;
+    }
+
+    if((pdu.header.ack == 1)&&(pdu.header.syn==1)&&internal_sock[0].state==SYN_RECEIVED){
+        internal_sock[0].state = ESTABLISHED ;
+    }  
+
     printf("[MIC-TCP-PROCESS-PDU] EXPECTING N %d\n", expected_seq_num);
-	if ((pdu.header.ack == 0) && (pdu.header.syn ==0)) 
+    if ((pdu.header.ack == 0) && (pdu.header.syn ==0)) 
     {
         printf("[MIC-TCP-PROCESS-PDU] RECEIVED N %d\n", pdu.header.seq_num);
         if (expected_seq_num == pdu.header.seq_num) {
-		    app_buffer_put(pdu.payload);
+            app_buffer_put(pdu.payload);
             expected_seq_num++;
         }
-		struct mic_tcp_pdu pdu_ack;
-		pdu_ack.header.ack = 1;
-		pdu_ack.header.seq_num = pdu.header.seq_num;
+        struct mic_tcp_pdu pdu_ack;
+        pdu_ack.header.ack = 1;
+        pdu_ack.header.seq_num = pdu.header.seq_num;
         printf("[MIC-TCP-RECEV] RECEV N %d\n", pdu.header.seq_num);
-		IP_send(pdu_ack,addr);	
-	}
+        IP_send(pdu_ack,addr);	
+    }
 }

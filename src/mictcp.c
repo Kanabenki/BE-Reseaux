@@ -6,9 +6,10 @@
 #define TIMEOUT 1000
 #define LOSS_ARR_SIZE 100
 #define LOSS_RATE 0
-#define MAX_LOSS_RATE 0
+#define MAX_LOSS_RATE 100
 
-int loss_rate ;
+static int proposed_loss_rate = 15; 
+static int loss_rate ;
 enum start_mode current_mode = SERVER;
 static struct mic_tcp_sock internal_sock[MAX_SOCKET];
 static int curr_socket_nb = 0;
@@ -107,8 +108,13 @@ int mic_tcp_connect(int socket, mic_tcp_sock_addr addr)
     struct mic_tcp_pdu pdu = {0};
     struct mic_tcp_pdu recv_pdu = {0};
     struct mic_tcp_sock_addr recv_addr;
-    pdu.header.syn = 1;
-    pdu.header.loss_rate = 15 ;    
+    struct mic_tcp_payload loss_rate ;
+
+    pdu.header.syn = 1 ;
+    loss_rate.size = sizeof(char);
+    loss_rate.data = malloc(sizeof(char));
+    *loss_rate.data = proposed_loss_rate ;
+    pdu.payload = loss_rate;    
 
     int ip_recv_res;
     do {
@@ -242,14 +248,14 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr) {
 
     if((pdu.header.ack ==0)&&(pdu.header.syn==1)){
         int sock = get_socket_from_addr(&addr);
-        int proposed_loss_rate = (int) pdu.header.loss_rate;
-        if (proposed_loss_rate  < MAX_LOSS_RATE){
-            internal_sock[sock].state = SYN_RECEIVED ;
-            loss_rate = proposed_loss_rate;
-        }  else {
-            close(sock);
+        int received_loss_rate = *(int*) pdu.payload.data;
+        if (received_loss_rate  < MAX_LOSS_RATE){
+            internal_sock[0].state = SYN_RECEIVED ;
+            loss_rate = received_loss_rate;
         }
-
+        else {
+         close(sock);    
+        } 
     }
 
     if(pdu.header.ack == 1 && pdu.header.syn == 0 && internal_sock[0].state == SYN_RECEIVED){

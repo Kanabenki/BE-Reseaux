@@ -71,7 +71,6 @@ typedef struct mic_tcp_header
   unsigned char syn; /* flag SYN (valeur 1 si activé et 0 si non) */
   unsigned char ack; /* flag ACK (valeur 1 si activé et 0 si non) */
   unsigned char fin; /* flag FIN (valeur 1 si activé et 0 si non) */
-  unsigned char loss_rate; /* flag LOSS_RATE pour la phase de négociation du taux de pertes*/
 } mic_tcp_header;
 
 /*

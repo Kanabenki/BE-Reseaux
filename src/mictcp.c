@@ -221,6 +221,15 @@ int mic_tcp_close (int socket)
     return 0;
 }
 
+int get_socket_from_addr(mic_tcp_sock_addr *addr) {
+    for (int i = 0; i < curr_socket_nb; i++) {
+        if (internal_sock[i].state != CLOSED && strcmp(internal_sock[i].addr.ip_addr, addr->ip_addr) == 0 && internal_sock[i].addr.port == addr->port) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 /*
  * Traitement d’un PDU MIC-TCP reçu (mise à jour des numéros de séquence
  * et d'acquittement, etc.) puis insère les données utiles du PDU dans
@@ -232,16 +241,19 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr) {
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
 
     if((pdu.header.ack ==0)&&(pdu.header.syn==1)){
+        int sock = get_socket_from_addr(&addr);
         int proposed_loss_rate = (int) pdu.header.loss_rate;
         if (proposed_loss_rate  < MAX_LOSS_RATE){
-            internal_sock[0].state = SYN_RECEIVED ;
+            internal_sock[sock].state = SYN_RECEIVED ;
             loss_rate = proposed_loss_rate;
-        } 
+        }  else {
+            close(sock);
+        }
 
     }
 
     if(pdu.header.ack == 1 && pdu.header.syn == 0 && internal_sock[0].state == SYN_RECEIVED){
-        internal_sock[0].state = ESTABLISHED;
+        internal_sock[get_socket_from_addr(&addr)].state = ESTABLISHED;
     }  
 
     printf("[MIC-TCP-PROCESS-PDU] EXPECTING N %d\n", expected_seq_num);
